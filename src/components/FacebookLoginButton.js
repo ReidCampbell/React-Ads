@@ -1,6 +1,10 @@
 import React, { Component } from "react";
 
 export default class FacebookLogin extends Component {
+    state = {
+        business: null
+    };
+
     componentDidMount() {
         document.addEventListener(
             "FBObjectReady",
@@ -47,76 +51,34 @@ export default class FacebookLogin extends Component {
         });
     };
 
-    getBusinesses = () => {
-        const businesses = [];
-
-        this.FB.api("/me", "GET", { fields: "businesses" }, function(response) {
-            // Insert your code here
-            response.businesses.data.forEach(business => {
-                businesses.push(business.name);
-            });
-        });
-        return businesses;
-    };
-
-    getAdAccounts = () => {
-        const adAccounts = [];
-        this.FB.api(
-            "/154403932593174",
-            "GET",
-            { fields: "owned_ad_accounts{name}" },
-            function(response) {
-                // Insert your code here
-                response.owned_ad_accounts.data.forEach(adAccount => {
-                    adAccounts.push(adAccount);
-                });
-            }
-        );
-        return adAccounts;
-    };
-
-    getCampaigns = () => {
-        const campaigns = [];
-
-        this.FB.api(
-            "act_728737454299043",
-            "GET",
-            {
-                fields:
-                    "campaigns{adsets{ads{adcreatives{instagram_permalink_url,effective_object_story_id},name},name},name}"
-            },
-            function(response) {
-                // Insert your code here
-                response.campaigns.data.forEach(campaign => {
-                    campaigns.push(campaign);
-                });
-            }
-        );
-        return campaigns;
-    };
-
-    /**
-     * Handle login response
-     */
     facebookLoginHandler = response => {
         if (response.status === "connected") {
-            this.FB.api("/me/accounts", userData => {
-                let result = {
-                    ...response,
-                    user: userData
-                };
-                this.props.onLogin(true, result);
-                this.getCampaigns();
-                this.getBusinesses();
-                this.getAdAccounts();
-            });
+            this.FB.api(
+                "/me",
+                "GET",
+                {
+                    fields:
+                        "businesses{owned_ad_accounts{name,campaigns{name,ads{name,adcreatives{instagram_permalink_url,effective_object_story_id}}}},name},name"
+                },
+                response => {
+                    let result = {
+                        ...response,
+                        user: response.name,
+                        businesses: response.businesses
+                    };
+                    this.props.onLogin(true, result);
+                }
+            );
         } else {
             this.props.onLogin(false);
         }
     };
 
     render() {
-        let { children } = this.props;
-        return <div onClick={this.facebookLogin}>{children}</div>;
+        return (
+            <>
+                <button onClick={this.facebookLogin}>login</button>
+            </>
+        );
     }
 }
